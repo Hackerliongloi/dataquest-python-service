@@ -12,6 +12,15 @@ from pydantic import BaseModel
 
 app = FastAPI(title="DataQuest Python Sandbox")
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# The Render build pre-warms matplotlib into this folder so a learner's first
+# plot does not spend its whole timeout scanning fonts on a cold instance.
+MPL_CONFIG_DIR = os.path.join(BASE_DIR, "mplconfig")
+try:
+    os.makedirs(MPL_CONFIG_DIR, exist_ok=True)
+except OSError:
+    pass
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -64,7 +73,10 @@ def run(req: RunRequest):
         "PATH": os.environ.get("PATH", ""),
         "PYTHONIOENCODING": "utf-8",
         "MPLBACKEND": "Agg",  # matplotlib never needs a display here
+        "MPLCONFIGDIR": MPL_CONFIG_DIR,
     }
+    if os.environ.get("HOME"):
+        env["HOME"] = os.environ["HOME"]
 
     try:
         proc = subprocess.run(
